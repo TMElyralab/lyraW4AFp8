@@ -1,0 +1,156 @@
+import os
+import json
+import numpy
+import torch
+from typing import Dict, List, Tuple, Optional
+from dataclasses import dataclass, fields
+
+from lyra_w4afp8 import ScalarType, machete_prepack_B
+
+from .utils import machete_quantize_and_pack, rand_data, maybe_convert_zeropoints
+
+@dataclass
+class Tensors:
+    w_ref: torch.Tensor
+    a_ref: torch.Tensor
+    a: torch.Tensor
+    w_q: torch.Tensor
+    w_g_s: Optional[torch.Tensor]
+    w_g_zp: Optional[torch.Tensor]
+    w_ch_s: Optional[torch.Tensor]
+    w_tok_s: Optional[torch.Tensor]
+
+    mm_group_cnt: int = 1
+    w_ref2: torch.Tensor = None
+    w_q2: torch.Tensor = None
+    w_g_s2: Optional[torch.Tensor] = None
+    w_g_zp2: Optional[torch.Tensor] = None
+    w_ch_s2: Optional[torch.Tensor] = None
+
+
+@dataclass
+class TypeConfig:
+    act_type: torch.dtype
+    weight_type: ScalarType
+    output_type: Optional[torch.dtype]
+    group_scale_type: Optional[torch.dtype]
+    group_zero_type: Optional[torch.dtype]
+    channel_scale_type: Optional[torch.dtype]
+    token_scale_type: Optional[torch.dtype]
+
+
+
+def create_gemm_data(shape: tuple[int, int, int],
+                        types: TypeConfig,
+                        group_size: Optional[int],
+                        mm_group_cnt: int = 1,
+                        subset_stride_factor: Optional[int] = None) -> Tensors:
+    m, n, k = shape
+    factor = subset_stride_factor or 1
+
+    print("create_data, shape:", shape, "types:", types, "group_size:", group_size)
+
+    a = rand_data((m * factor, k * factor), types.act_type, scale=3, offset=2)
+    w = rand_data((k * factor, n * factor), types.act_type, scale=3, offset=1)
+
+    if factor > 1:
+        a = a[0:m, 0:k]
+        w = w[0:k, 0:n]
+
+    if types.group_scale_type is not None:
+        w = w.to(types.group_scale_type)
+    if w.dtype.itemsize == 1:
+        w = w.to(torch.float16)
+
+    w_ref, w_q_packed, w_s, w_zp = machete_quantize_and_pack(
+        a.dtype, w, types.weight_type, types.group_scale_type, group_size,
+        types.group_zero_type is not None)
+
+    if not a.dtype.is_floating_point:
+        aiinfo = torch.iinfo(a.dtype)
+        w_ref = w_ref.round().clamp(aiinfo.min, aiinfo.max)
+
+    a_ref = a.to(torch.float32)
+    w_ref = w_ref.to(torch.float32)
+
+    w_ch_s = None if types.channel_scale_type is None else\
+        rand_data((n,), types.channel_scale_type)
+    w_tok_s = None if types.token_scale_type is None else\
+        rand_data((m,), types.token_scale_type)
+
+    # 创建 grouped weight
+    if mm_group_cnt > 1:
+        w2 = torch.cat([w.unsqueeze(1) for i in range(mm_group_cnt)], dim=1).contiguous()
+        w2 = w2.reshape([w.shape[0], -1])
+
+        w_ref2, w_q_packed2, w_s2, w_zp2 = machete_quantize_and_pack(
+            a.dtype, w2, types.weight_type, types.group_scale_type, group_size,
+            types.group_zero_type is not None)
+
+        w_ch_s2 = None if w_ch_s is None else torch.cat([w_ch_s for i in range(mm_group_cnt)])
+        w_g_zp2 = maybe_convert_zeropoints(w_zp2, w_s2)
+    else:
+        w_ref2, w_q_packed2, w_s2, w_g_zp2, w_ch_s2 = [None]*5
+
+    return Tensors(w_ref=w_ref,
+                a_ref=a_ref,
+                a=a,
+                w_q=w_q_packed,
+                w_g_s=w_s,
+                w_g_zp=maybe_convert_zeropoints(w_zp, w_s),
+                w_ch_s=w_ch_s,
+                w_tok_s=w_tok_s,
+                mm_group_cnt=mm_group_cnt,
+                w_ref2=w_ref2,
+                w_q2=w_q_packed2,
+                w_g_s2=w_s2,
+                w_g_zp2=w_g_zp2,
+                w_ch_s2=w_ch_s2)
+
+
+def create_moe_data(num_experts: int,
+                    shape: tuple[int, int, int],
+                    types: TypeConfig,
+                    group_size: Optional[int] = 128,
+                    tp_size: int = 8,
+                    subset_stride_factor: Optional[int] = None) -> Tensors:
+    m, n, k = shape  # m, intermediate_size, hidden_size
+    mm_group_cnt = num_experts
+    
+    #import pdb;pdb.set_trace()
+    ddtype = torch.float16 #types.act_type
+    w1 = rand_data((k, mm_group_cnt, 2*n//tp_size), ddtype, scale=3, offset=1).reshape([k, -1])
+    w2 = rand_data([n//tp_size, mm_group_cnt, k], ddtype, scale=3, offset=1).reshape([n//tp_size, -1])
+
+    w_ref, w_q_packed, w_s, w_zp = machete_quantize_and_pack(
+        torch.float8_e4m3fn, w1, types.weight_type, types.group_scale_type, group_size,
+        types.group_zero_type is not None)
+
+    w_ref2, w_q_packed2, w_s2, w_zp2 = machete_quantize_and_pack(
+        torch.float8_e4m3fn, w2, types.weight_type, types.group_scale_type, group_size,
+        types.group_zero_type is not None)
+
+    w_ch_s = None if types.channel_scale_type is None else\
+        rand_data((n,), types.channel_scale_type)
+    w_tok_s = None if types.token_scale_type is None else\
+        rand_data((m,), types.token_scale_type)
+
+    w_ch_s2 = None if w_ch_s is None else torch.cat([w_ch_s for i in range(mm_group_cnt)])
+
+    w_q_packed = w_q_packed.reshape([num_experts, -1, 2*n//tp_size])
+    w_q_packed2 = w_q_packed2.reshape([num_experts, -1, k])
+
+    return Tensors(w_ref=None,
+                   a_ref=None,
+                   a=None,
+                   w_q=w_q_packed.reshape([num_experts, -1, 2*n//tp_size]),
+                   w_g_s=w_s,
+                   w_g_zp=maybe_convert_zeropoints(w_zp, w_s),
+                   w_ch_s=w_ch_s,
+                   w_tok_s=w_tok_s,
+                   mm_group_cnt=mm_group_cnt,
+                   w_ref2=None,
+                   w_q2=w_q_packed2.reshape([num_experts, -1, k]),
+                   w_g_s2=w_s2,
+                   w_g_zp2=maybe_convert_zeropoints(w_zp2, w_s2),
+                   w_ch_s2=w_ch_s2)
