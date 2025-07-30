@@ -93,7 +93,7 @@ Max ITL (ms):                            7819.3
 ==================================================
 ```
 
-Accuracy: AIME 2024 benchmark, attained accuracy of 66.83 %
+Accuracy: AIME 2024 benchmark, attained accuracy of 78.3 %
 
 Compared to the original DeepSeek-R1 model, throughput has increased by 56%
 
