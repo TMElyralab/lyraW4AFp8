@@ -65,16 +65,15 @@ def create_gemm_data(shape: tuple[int, int, int],
     w_ref, w_q_packed, w_s, w_zp = machete_quantize_and_pack(
         a.dtype, w, types.weight_type, types.group_scale_type, group_size,
         types.group_zero_type is not None)
-
-        # 创建 grouped weight
+        
     if mm_group_cnt > 1:
+        # 创建 grouped weight
         w_tmp = torch.cat([w.unsqueeze(1) for i in range(mm_group_cnt)], dim=1).contiguous()
         w = w_tmp.reshape([w.shape[0], -1])
 
-        xxx, w_q_packed, w_s, w_zp = machete_quantize_and_pack(
+        _, w_q_packed, w_s, w_zp = machete_quantize_and_pack(
             a.dtype, w, types.weight_type, types.group_scale_type, group_size,
             types.group_zero_type is not None)
-
 
 
     if not a.dtype.is_floating_point:

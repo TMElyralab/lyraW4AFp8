@@ -77,14 +77,9 @@ def save_configs(
     configs: Dict[int, BenchmarkConfig],
     num_experts: int,
 ) -> None:
-    filename = f"experts_num={experts_num},awq_w4a8_machete_moe.json"
-    configs1 = {k: configs[k][0] for k in configs}
-    configs2 = {k: configs[k][1] for k in configs}
-
-    d = {
-        "config": configs1,
-        "bench_time": configs2
-    }
+    filename = f"experts_num={num_experts},awq_w4a8_machete_moe.json"
+    d = {k: get_schedule_name(configs[k][0]) for k in configs}
+    d["bench_time"] = {k: configs[k][1] for k in configs}
 
     print(f"Writing best config to {filename}...")
     with open(filename, "w") as f:
