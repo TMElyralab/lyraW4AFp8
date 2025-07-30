@@ -166,5 +166,5 @@ def machete_quantize_and_pack(atype: torch.dtype,
     w_q = pack_rows(w_q, wtype.size_bits, *w_q.shape)
     w_q = w_q.t().contiguous().t()  # convert to col major
 
-    w_q_machete = machete_prepack_B(w_q, atype, wtype, stype) # torch.ops.lyra_w4afp8.
+    w_q_machete = machete_prepack_B(w_q, atype, wtype, stype)
     return w_ref, w_q_machete, w_s, w_zp

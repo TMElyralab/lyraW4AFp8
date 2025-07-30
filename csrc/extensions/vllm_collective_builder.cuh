@@ -4,6 +4,8 @@
 #include "dispatch_policy.hpp"
 #include "sm90_mma_tma_gmma_ss_warpspecialized_fp8_blockwise_scaling.hpp"
 
+//Adapted from https://github.com/vllm-project/vllm/blob/main/csrc/cutlass_extensions/vllm_collective_builder.cuh
+
 namespace cutlass::gemm::collective {
 using namespace cute;
 

@@ -2,11 +2,11 @@
 
 LyraW4fp8 is a library designed for W4AFP8 Mix-of-Experts (MoE) and GEMMs.
 
-This  library innovatively realized Machete Grouped-GEMM and MoE architecture, by optimizing the Machete GEMM kernels.
+This library innovatively realized Machete Grouped-GEMM and MoE architecture, by optimizing the Machete GEMM kernels.
 
 We further employed the tuning methodology for multi matrix shape to achieve peak acceleration.
 
-We also integrated both MoE and Linear method into SGLang for W4AFP8-quantized models.The result simultaneously boost sustained throughput and cut time latency on a single H20 or H100.
+We also integrated both MoE and Linear method into SGLang for W4AFP8-quantized models. The result simultaneously boost sustained throughput and cut time latency on a single H20 or H100.
 
 
 # Model
@@ -24,7 +24,7 @@ Development build:
 make build
 ```
 
-If you want to clear history build and rebuild,  try using `make rebuild`.
+If you want to clear history and rebuild,  try using `make rebuild`.
 
 ## Tuning
 

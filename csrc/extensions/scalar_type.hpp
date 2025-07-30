@@ -5,7 +5,7 @@
 
 namespace vllm {
 
-//
+//  Adapt from https://github.com/vllm-project/vllm/blob/main/csrc/core/scalar_type.hpp
 //  ScalarType can represent a wide range of floating point and integer types,
 //  in particular it can be used to represent sub-byte data types (something
 //  that torch.dtype currently does not support).

@@ -5,8 +5,6 @@ import time
 from datetime import datetime
 from typing import Any, Dict, List, Tuple, TypedDict, Optional
 
-import os
-import math
 import ray
 import torch
 import triton
@@ -17,7 +15,7 @@ from transformers import AutoConfig
 from fused_moe import fused_experts_machete_impl
 from lyra_w4afp8 import ScalarType, scalar_types
 
-from common.data_utils import create_moe_data, TypeConfig, Tensors
+from common.data_utils import create_moe_data, TypeConfig
 from tune.utils import BenchmarkConfig, get_configs_compute_bound, get_schedule_name, sort_config
 
 MNK_SHAPES = [
@@ -240,8 +238,6 @@ def main(args: argparse.Namespace):
     topk = config.num_experts_per_tok
     hidden_size = getattr(config, "hidden_size", None) or config.text_config.hidden_size
     dtype = config.torch_dtype
-
-    #import pdb;pdb.set_trace()
 
     if args.batch_size is None:
         batch_sizes = [

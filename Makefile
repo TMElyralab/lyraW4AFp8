@@ -37,10 +37,3 @@ rebuild: clean submodule build ## Clean and rebuild the project
 test: ## Run all tests
 	@find tests -name "test_*.py" | xargs -n 1 python3
 
-format: check-deps ## Format all source files
-	@echo "Formatting source files..."
-	@find csrc tests -name '*.cc' -o -name '*.cu' -o -name '*.cuh' -o -name '*.h' -o -name '*.hpp' | xargs clang-format -i
-	@find python tests -name '*.py' | xargs isort
-	@find python tests -name '*.py' | xargs black
-	@pre-commit run --all-files
-

@@ -1,7 +1,3 @@
-import argparse
-import json
-import time
-from datetime import datetime
 from typing import Any, Dict, List, Tuple, TypedDict, Optional
 
 class BenchmarkConfig(TypedDict):
@@ -9,6 +5,7 @@ class BenchmarkConfig(TypedDict):
     BLOCK_SIZE_N: int
     CLUSTER_SIZE: int
     SCHE: str
+
 
 def get_configs_compute_bound() -> List[Dict[str, int]]:
     configs: List[BenchmarkConfig] = []
@@ -26,6 +23,7 @@ def get_configs_compute_bound() -> List[Dict[str, int]]:
                     )
     return configs
 
+
 def get_schedule_name(config):
     schedule = "{}x{}_{}x1x1_TmaMI__TmaCoop_{}".format(
         config["BLOCK_SIZE_M"], 
@@ -33,6 +31,8 @@ def get_schedule_name(config):
         config["CLUSTER_SIZE"],
         config["SCHE"])
     return schedule
+
+
 def sort_config(config: BenchmarkConfig) -> BenchmarkConfig:
     return {
         "BLOCK_SIZE_M": config["BLOCK_SIZE_M"],

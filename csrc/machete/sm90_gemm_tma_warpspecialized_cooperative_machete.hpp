@@ -48,8 +48,6 @@
 #include "cutlass/workspace.h"
 #include "dispatch_policy_machete.cuh"
 
-///////////////////////////////////////////////////////////////////////////////
-
 namespace cutlass::gemm::kernel {
 
 template <class ProblemShape_, class CollectiveMainloop_, class CollectiveEpilogue_, class TileSchedulerTag_>

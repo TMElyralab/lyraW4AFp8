@@ -14,7 +14,7 @@ import triton
 import triton.language as tl
 from lyra_w4afp8 import machete_mm, ScalarType, scalar_types
 
-from lyra_w4afp8 import moe_align_block_size as sgl_moe_align_block_size
+from lyra_w4afp8 import moe_align_block_size as moe_align_block_size_op
 
 
 logger = logging.getLogger(__name__)
@@ -84,7 +84,7 @@ def moe_align_block_size(
     if not fuse_sorted_ids_padding:
         sorted_ids.fill_(topk_ids.numel())
 
-    sgl_moe_align_block_size(
+    moe_align_block_size_op(
         topk_ids,
         num_experts,
         block_size,

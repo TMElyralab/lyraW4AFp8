@@ -2,7 +2,7 @@
 #include "machete_mm_launcher.cuh"
 #include "machete_prepack_launcher.cuh"
 
-// #include "core/registration.h"
+// Adapted form https://github.com/vllm-project/vllm/blob/main/csrc/quantization/machete/machete_pytorch.cu
 
 namespace machete {
 
@@ -70,15 +70,5 @@ torch::Tensor prepack_B(
   return prepack_B_dispatch(
       {.B = B, .a_type = a_type, .b_type = b_type, .maybe_group_scales_type = maybe_group_scales_type});
 }
-
-// TORCH_LIBRARY_IMPL_EXPAND(TORCH_EXTENSION_NAME, CUDA, m) {
-//   m.impl("machete_prepack_B", &prepack_B);
-//   m.impl("machete_mm", &mm);
-// }
-
-// // use CatchAll since supported_schedules has no tensor arguments
-// TORCH_LIBRARY_IMPL(TORCH_EXTENSION_NAME, CatchAll, m) {
-//   m.impl("machete_supported_schedules", &supported_schedules);
-// }
 
 };  // namespace machete

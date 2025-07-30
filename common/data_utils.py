@@ -7,7 +7,7 @@ from dataclasses import dataclass, fields
 
 from lyra_w4afp8 import ScalarType, machete_prepack_B
 
-from .utils import machete_quantize_and_pack, rand_data, maybe_convert_zeropoints
+from .utils import rand_data, machete_quantize_and_pack, maybe_convert_zeropoints
 
 @dataclass
 class Tensors:
@@ -33,11 +33,11 @@ class TypeConfig:
     act_type: torch.dtype
     weight_type: ScalarType
     output_type: Optional[torch.dtype]
+    #group_size: Optional[int]
     group_scale_type: Optional[torch.dtype]
     group_zero_type: Optional[torch.dtype]
     channel_scale_type: Optional[torch.dtype]
     token_scale_type: Optional[torch.dtype]
-
 
 
 def create_gemm_data(shape: tuple[int, int, int],
@@ -66,6 +66,17 @@ def create_gemm_data(shape: tuple[int, int, int],
         a.dtype, w, types.weight_type, types.group_scale_type, group_size,
         types.group_zero_type is not None)
 
+        # 创建 grouped weight
+    if mm_group_cnt > 1:
+        w_tmp = torch.cat([w.unsqueeze(1) for i in range(mm_group_cnt)], dim=1).contiguous()
+        w = w_tmp.reshape([w.shape[0], -1])
+
+        xxx, w_q_packed, w_s, w_zp = machete_quantize_and_pack(
+            a.dtype, w, types.weight_type, types.group_scale_type, group_size,
+            types.group_zero_type is not None)
+
+
+
     if not a.dtype.is_floating_point:
         aiinfo = torch.iinfo(a.dtype)
         w_ref = w_ref.round().clamp(aiinfo.min, aiinfo.max)
@@ -73,24 +84,11 @@ def create_gemm_data(shape: tuple[int, int, int],
     a_ref = a.to(torch.float32)
     w_ref = w_ref.to(torch.float32)
 
-    w_ch_s = None if types.channel_scale_type is None else\
-        rand_data((n,), types.channel_scale_type)
-    w_tok_s = None if types.token_scale_type is None else\
-        rand_data((m,), types.token_scale_type)
+    w_ch_s = None if types.channel_scale_type is None else rand_data((n,), types.channel_scale_type)
+    w_tok_s = None if types.token_scale_type is None else rand_data((m,), types.token_scale_type)
 
-    # 创建 grouped weight
     if mm_group_cnt > 1:
-        w2 = torch.cat([w.unsqueeze(1) for i in range(mm_group_cnt)], dim=1).contiguous()
-        w2 = w2.reshape([w.shape[0], -1])
-
-        w_ref2, w_q_packed2, w_s2, w_zp2 = machete_quantize_and_pack(
-            a.dtype, w2, types.weight_type, types.group_scale_type, group_size,
-            types.group_zero_type is not None)
-
-        w_ch_s2 = None if w_ch_s is None else torch.cat([w_ch_s for i in range(mm_group_cnt)])
-        w_g_zp2 = maybe_convert_zeropoints(w_zp2, w_s2)
-    else:
-        w_ref2, w_q_packed2, w_s2, w_g_zp2, w_ch_s2 = [None]*5
+        w_ch_s = w_ch_s.repeat(mm_group_cnt) if w_ch_s is not None else None
 
     return Tensors(w_ref=w_ref,
                 a_ref=a_ref,
@@ -100,12 +98,7 @@ def create_gemm_data(shape: tuple[int, int, int],
                 w_g_zp=maybe_convert_zeropoints(w_zp, w_s),
                 w_ch_s=w_ch_s,
                 w_tok_s=w_tok_s,
-                mm_group_cnt=mm_group_cnt,
-                w_ref2=w_ref2,
-                w_q2=w_q_packed2,
-                w_g_s2=w_s2,
-                w_g_zp2=w_g_zp2,
-                w_ch_s2=w_ch_s2)
+                mm_group_cnt=mm_group_cnt)
 
 
 def create_moe_data(num_experts: int,
@@ -117,8 +110,7 @@ def create_moe_data(num_experts: int,
     m, n, k = shape  # m, intermediate_size, hidden_size
     mm_group_cnt = num_experts
     
-    #import pdb;pdb.set_trace()
-    ddtype = torch.float16 #types.act_type
+    ddtype = types.output_type
     w1 = rand_data((k, mm_group_cnt, 2*n//tp_size), ddtype, scale=3, offset=1).reshape([k, -1])
     w2 = rand_data([n//tp_size, mm_group_cnt, k], ddtype, scale=3, offset=1).reshape([n//tp_size, -1])
 

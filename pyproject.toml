@@ -9,7 +9,7 @@ build-backend = "scikit_build_core.build"
 [project]
 name = "lyra-w4afp8"
 version = "0.0.1"
-description = "Kernel Library for SGLang"
+description = "Kernel Library for W4afp8"
 readme = "README.md"
 requires-python = ">=3.9"
 license = { file = "LICENSE" }
@@ -21,8 +21,8 @@ classifiers = [
 dependencies = []
 
 [project.urls]
-"Homepage" = "https://github.com/sgl-project/xxx/tree/main/lyra-w4afp8"
-"Bug Tracker" = "https://github.com/sgl-project/xxx/issues"
+"Homepage" = "https://github.com/TMElyralab/lyraW4AFp8"
+"Bug Tracker" = "https://github.com/TMElyralab/lyraW4AFp8/issues"
 
 [tool.wheel]
 exclude = [

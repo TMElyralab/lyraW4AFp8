@@ -10,11 +10,10 @@ import ray
 import torch
 import triton
 from ray.experimental.tqdm_ray import tqdm
-from transformers import AutoConfig
 
-from lyra_w4afp8 import ScalarType, scalar_types, machete_mm
+from lyra_w4afp8 import scalar_types, machete_mm
 
-from common.data_utils import create_gemm_data, TypeConfig, Tensors
+from common.data_utils import create_gemm_data, TypeConfig
 from tune.utils import BenchmarkConfig, get_configs_compute_bound, get_schedule_name, sort_config
 
 dd_type = torch.float16

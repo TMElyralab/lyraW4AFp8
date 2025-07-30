@@ -5,8 +5,7 @@ from dataclasses import dataclass, fields
 
 from fused_moe import fused_experts_machete_impl
 from common.utils import quantize_weights
-
-from lyra_w4afp8 import machete_mm, machete_prepack_B, ScalarType, scalar_types
+from lyra_w4afp8 import machete_prepack_B, ScalarType, scalar_types
 
 from sglang.srt.layers.activation import SiluAndMul
 from sglang.srt.layers.moe.topk import select_experts

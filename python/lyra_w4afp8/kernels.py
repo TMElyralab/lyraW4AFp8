@@ -28,7 +28,6 @@ def machete_supported_schedules(
 
 def machete_mm(
     a: torch.Tensor,
-    # b_q Should be the tensor returned by machete_prepack_B
     b_q: torch.Tensor,
     b_type: ScalarType,
     out_type: Optional[torch.dtype] = None,
@@ -79,6 +78,7 @@ def machete_prepack_B(
     return torch.ops.lyra_w4afp8.machete_prepack_B.default(
         b_q_weight, a_type, b_type.id, group_scales_type
     )
+
 
 def moe_align_block_size(
     topk_ids,
