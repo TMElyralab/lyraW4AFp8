@@ -14,7 +14,8 @@ We also integrated both MoE and Linear method into SGLang for W4AFP8-quantized m
 We offered W4AFP8 AWQ quantized models :
 
 - [DeepSeek-R1-AWQ-W4AFP8](https://huggingface.co/TMElyralab/DeepSeek-R1-AWQ-W4AFP8)
-- [DeepSeek-V3-AWQ-W4AFP8](https://huggingface.co/TMElyralab/DeepSeek-V3-AWQ-W4AFP8)
+- [DeepSeek-R1-0528-AWQ-W4AFP8](https://huggingface.co/TMElyralab/DeepSeek-R1-0528-AWQ-W4AFP8)
+- [DeepSeek-V3-0324-AWQ-W4AFP8](https://huggingface.co/TMElyralab/DeepSeek-V3-0324-AWQ-W4AFP8)
 
 ## Installation
 
